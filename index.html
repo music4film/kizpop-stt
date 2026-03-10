@@ -1,0 +1,386 @@
+<meta charset="UTF-8">
+<title></title>
+<style type="text/css">body{
+background:#0f0f0f;
+color:#ffffff;
+font-family:Arial,sans-serif;
+padding:30px;
+}
+
+/* TITLE */
+
+h2{
+margin-bottom:12px;
+font-size:20px;
+font-weight:900;
+letter-spacing:0.6px;
+color:#ffffff;
+}
+
+h2::before{
+content:"● ";
+color:#ff3d00;
+}
+
+/* STATUS */
+
+.status{
+font-size:12px;
+opacity:.65;
+margin-bottom:10px;
+}
+
+/* TEXT AREA */
+
+#lines{
+margin-top:20px;
+max-width:900px;
+height:520px;
+overflow-y:auto;
+border:1px solid #333;
+padding:12px;
+margin-left:auto;
+margin-right:auto;
+}
+
+/* CAPTION LINE */
+
+.line{
+background:#1e1e1e;
+color:#ffffff;
+padding:12px;
+border-radius:10px;
+margin-bottom:8px;
+cursor:pointer;
+transition:.15s;
+font-size:18px;
+line-height:1.4;
+white-space:pre-line;
+}
+
+.line:hover{
+background:#2962ff;
+}
+
+.copied{
+background:#00c853 !important;
+}
+
+.new{
+outline:2px solid #ffaa00;
+}
+
+.live{
+opacity:.5;
+font-style:italic;
+}
+</style>
+<h2 style="text-align:center;"><span style="color:#999999;">KIZPOP STT FINAL ULTRA v5</span></h2>
+
+<div class="status" style="text-align:center;">Auto Listening / Real-time STT / Click line &rarr; Copy &rarr; Vegas Paste</div>
+
+<div id="lines">&nbsp;</div>
+<script>
+
+const SpeechRecognition =
+window.SpeechRecognition || window.webkitSpeechRecognition
+
+const recognition = new SpeechRecognition()
+
+recognition.lang="ko-KR"
+recognition.continuous=true
+recognition.interimResults=true
+recognition.maxAlternatives=1
+
+
+let recognizing=false
+let silenceTimer=null
+
+let lastText=""
+let textBuffer=""
+
+const linesDiv=document.getElementById("lines")
+
+let autoScroll=true
+let liveLine=null
+
+
+
+// --------------------
+// USER SCROLL LOCK
+// --------------------
+
+linesDiv.addEventListener("scroll",()=>{
+
+const bottom =
+linesDiv.scrollHeight - linesDiv.scrollTop - linesDiv.clientHeight
+
+autoScroll = bottom < 120
+
+})
+
+
+
+// --------------------
+// LIVE TEXT
+// --------------------
+
+function showLive(text){
+
+if(!liveLine){
+
+liveLine=document.createElement("div")
+liveLine.className="line live"
+
+linesDiv.appendChild(liveLine)
+
+}
+
+liveLine.innerText=text
+
+if(autoScroll){
+linesDiv.scrollTop=linesDiv.scrollHeight
+}
+
+}
+
+
+function clearLive(){
+
+if(liveLine){
+
+liveLine.remove()
+liveLine=null
+
+}
+
+}
+
+
+
+// --------------------
+// CONTEXT SPLIT ENGINE
+// --------------------
+
+function splitText(text){
+
+let result=[]
+
+let sentences=text.split(/(?<=[.!?])/)
+
+sentences.forEach(sentence=>{
+
+sentence=sentence.trim()
+
+let phraseSplit=
+sentence.split(/(은|는|이|가|을|를|에서|그리고|그런데|그래서|하지만)/)
+
+let buffer=""
+
+phraseSplit.forEach(word=>{
+
+buffer+=word
+
+// &#x1f525; Vegas 자막 가독성 기준
+if(buffer.length>14){
+
+result.push(buffer.trim())
+buffer=""
+
+}
+
+})
+
+if(buffer.length>0){
+result.push(buffer.trim())
+}
+
+})
+
+return result
+
+}
+
+
+
+// --------------------
+// LINE CREATE
+// --------------------
+
+function createLine(text){
+
+let div=document.createElement("div")
+
+div.className="line new"
+
+div.innerText=text
+
+div.onclick=function(){
+
+navigator.clipboard.writeText(text)
+
+div.classList.add("copied")
+
+setTimeout(()=>{
+div.classList.remove("copied")
+},500)
+
+}
+
+linesDiv.appendChild(div)
+
+setTimeout(()=>div.classList.remove("new"),800)
+
+if(autoScroll){
+linesDiv.scrollTop=linesDiv.scrollHeight
+}
+
+}
+
+
+
+// --------------------
+// &#x1f525; BUFFER FLUSH
+// --------------------
+
+function flushBuffer(){
+
+if(textBuffer.trim().length===0) return
+
+let finalText=textBuffer.trim()
+textBuffer=""
+
+if(finalText===lastText) return
+
+lastText=finalText
+
+let lines=splitText(finalText)
+
+lines.forEach(t=>createLine(t))
+
+clearLive()
+
+}
+
+
+
+// --------------------
+// STT RESULT
+// --------------------
+
+recognition.onresult=function(event){
+
+for(let i=event.resultIndex;i<event.results.length;i++){
+
+let transcript=event.results[i][0].transcript.trim()
+
+
+// LIVE TEXT
+
+if(!event.results[i].isFinal){
+
+showLive(transcript)
+continue
+
+}
+
+
+clearLive()
+
+
+// BUFFER 누적
+
+textBuffer += " " + transcript
+textBuffer = textBuffer.trim()
+
+
+// 긴 문장 or 마침표 시 바로 출력
+
+if(textBuffer.length > 20 || /[.!?]$/.test(textBuffer)){
+
+flushBuffer()
+
+}
+
+}
+
+}
+
+
+
+// --------------------
+// STT AUTO RESTART
+// --------------------
+
+recognition.onend=function(){
+
+if(recognizing){
+recognition.start()
+}
+
+}
+
+
+
+// --------------------
+// AUDIO DETECT
+// --------------------
+
+navigator.mediaDevices.getUserMedia({audio:true}).then(stream=>{
+
+const audioContext=new AudioContext()
+
+const mic=audioContext.createMediaStreamSource(stream)
+
+const analyser=audioContext.createAnalyser()
+
+analyser.fftSize=512
+
+mic.connect(analyser)
+
+const data=new Uint8Array(analyser.frequencyBinCount)
+
+
+function detect(){
+
+analyser.getByteFrequencyData(data)
+
+let volume=data.reduce((a,b)=>a+b)/data.length
+
+
+if(volume>25){
+
+if(!recognizing){
+
+recognition.start()
+recognizing=true
+
+}
+
+clearTimeout(silenceTimer)
+
+silenceTimer=setTimeout(()=>{
+
+// &#x1f525; 음성 멈추면 바로 자막 생성
+flushBuffer()
+
+if(recognizing){
+
+recognition.stop()
+recognizing=false
+
+}
+
+},1200)
+
+}
+
+requestAnimationFrame(detect)
+
+}
+
+detect()
+
+})
+
+</script>
