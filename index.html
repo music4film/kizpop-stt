@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>KIZPOP STT & TRANSLATOR ULTRA v7</title>
+<title>KIZPOP STT & TRANSLATOR ULTRA v8</title>
 <style type="text/css">
 body {
   background: #0f0f0f;
@@ -44,24 +44,42 @@ h2::before {
   display: flex;
   justify-content: center;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
   flex-wrap: wrap;
 }
 
-.btn-toggle {
-  background: #ff3d00;
+.btn {
+  background: #2a2a2a;
   color: #fff;
-  border: none;
-  padding: 10px 24px;
-  font-size: 15px;
+  border: 1px solid #444;
+  padding: 9px 18px;
+  font-size: 14px;
   font-weight: bold;
   border-radius: 20px;
   cursor: pointer;
   transition: 0.2s;
 }
 
+.btn:hover {
+  background: #3a3a3a;
+}
+
+.btn-toggle {
+  background: #ff3d00;
+  border: none;
+}
+
 .btn-toggle.active {
   background: #00c853;
+}
+
+.btn-download {
+  background: #2962ff;
+  border: none;
+}
+
+.btn-download:hover {
+  background: #1e88e5;
 }
 
 .lang-select {
@@ -79,7 +97,7 @@ h2::before {
 #lines {
   margin-top: 15px;
   max-width: 900px;
-  height: 540px;
+  height: 520px;
   overflow-y: auto;
   border: 1px solid #333;
   padding: 15px;
@@ -102,10 +120,19 @@ h2::before {
   line-height: 1.4;
   white-space: pre-line;
   word-break: keep-all;
+  position: relative;
 }
 
 .line:hover {
   background: #2962ff;
+}
+
+.time-tag {
+  font-size: 11px;
+  color: #ff3d00;
+  font-weight: bold;
+  margin-bottom: 4px;
+  display: block;
 }
 
 .trans-text {
@@ -135,12 +162,12 @@ h2::before {
 </head>
 <body>
 
-<h2><span style="color:#999999;">KIZPOP STT & TRANSLATOR ULTRA v7</span></h2>
+<h2><span style="color:#999999;">KIZPOP STT & TRANSLATOR ULTRA v8</span></h2>
 
 <div class="status-bar">
-  <div class="status">Real-time STT & Global Translation / Click line &rarr; Copy &rarr; Vegas Paste</div>
+  <div class="status">Real-time STT / Translation / Auto SRT Generator</div>
   <div class="controls">
-    <button id="startBtn" class="btn-toggle" onclick="toggleSTT()">음성 인식 시작</button>
+    <button id="startBtn" class="btn btn-toggle" onclick="toggleSTT()">음성 인식 시작</button>
     <select id="targetLang" class="lang-select">
       <option value="none">번역 안 함 (한국어만)</option>
       <option value="en" selected>영어 (English)</option>
@@ -150,6 +177,9 @@ h2::before {
       <option value="fr">프랑스어 (Français)</option>
       <option value="vi">베트남어 (Tiếng Việt)</option>
     </select>
+    <button class="btn btn-download" onclick="exportSRT('ko')">SRT 받기 (원문)</button>
+    <button class="btn btn-download" onclick="exportSRT('both')">SRT 받기 (통합)</button>
+    <button class="btn" onclick="clearAllData()">초기화</button>
   </div>
 </div>
 
@@ -172,6 +202,10 @@ let isListening = false;
 let textBuffer = "";
 let liveLine = null;
 let autoScroll = true;
+
+let sessionStartTime = 0;
+let chunkStartTime = 0;
+let subtitleRecords = []; // SRT 저장용 데이터 배열
 
 const linesDiv = document.getElementById("lines");
 const startBtn = document.getElementById("startBtn");
@@ -198,9 +232,13 @@ function toggleSTT() {
 
 function startListening() {
   try {
+    if (sessionStartTime === 0) {
+      sessionStartTime = Date.now();
+    }
+    chunkStartTime = Date.now() - sessionStartTime;
     recognition.start();
     isListening = true;
-    startBtn.innerText = "음성 인식 중 (클릭하여 정지)";
+    startBtn.innerText = "음성 인식 중 (정지)";
     startBtn.classList.add("active");
   } catch (e) {
     console.error("STT Start Error:", e);
@@ -213,6 +251,15 @@ function stopListening() {
   flushBuffer();
   startBtn.innerText = "음성 인식 시작";
   startBtn.classList.remove("active");
+}
+
+function clearAllData() {
+  if (confirm("모든 자막과 타임코드 데이터를 초기화하시겠습니까?")) {
+    linesDiv.innerHTML = "";
+    subtitleRecords = [];
+    sessionStartTime = 0;
+    textBuffer = "";
+  }
 }
 
 // --------------------
@@ -239,7 +286,7 @@ function clearLive() {
 }
 
 // --------------------
-// TRANSLATION ENGINE (FREE GOOGLE TRANSLATE)
+// TRANSLATION ENGINE
 // --------------------
 async function fetchTranslation(text, targetLang) {
   if (!targetLang || targetLang === "none" || !text.trim()) return "";
@@ -272,34 +319,62 @@ function splitText(text) {
     }
   });
 
-  if (current) {
-    result.push(current.trim());
-  }
-
+  if (current) result.push(current.trim());
   return result;
 }
 
 // --------------------
-// LINE CREATION & CLIPBOARD
+// TIMECODE FORMATTER (SRT Format: HH:MM:SS,mmm)
 // --------------------
-async function createLine(text) {
+function formatSRTTime(ms) {
+  let hrs = Math.floor(ms / 3600000);
+  let mins = Math.floor((ms % 3600000) / 60000);
+  let secs = Math.floor((ms % 60000) / 1000);
+  let millis = Math.floor(ms % 1000);
+
+  return `${String(hrs).padStart(2, '0')}:${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')},${String(millis).padStart(3, '0')}`;
+}
+
+// --------------------
+// LINE CREATION & DATA RECORDING
+// --------------------
+async function createLine(text, startMs, endMs) {
   if (!text || text.trim() === "") return;
 
+  const selectedLang = targetLangSelect.value;
+  let transText = "";
+
+  if (selectedLang !== "none") {
+    transText = await fetchTranslation(text, selectedLang);
+  }
+
+  // 레코드 저장
+  const record = {
+    index: subtitleRecords.length + 1,
+    startMs: startMs,
+    endMs: endMs,
+    ko: text,
+    trans: transText
+  };
+  subtitleRecords.push(record);
+
+  // 화면 요소 생성
   let div = document.createElement("div");
   div.className = "line new";
-  div.innerText = text;
 
-  const selectedLang = targetLangSelect.value;
-  
-  // 실시간 번역 처리
-  if (selectedLang !== "none") {
-    const translated = await fetchTranslation(text, selectedLang);
-    if (translated) {
-      let transSpan = document.createElement("span");
-      transSpan.className = "trans-text";
-      transSpan.innerText = translated;
-      div.appendChild(transSpan);
-    }
+  let timeSpan = document.createElement("span");
+  timeSpan.className = "time-tag";
+  timeSpan.innerText = `[${formatSRTTime(startMs)} --> ${formatSRTTime(endMs)}]`;
+  div.appendChild(timeSpan);
+
+  let textNode = document.createTextNode(text);
+  div.appendChild(textNode);
+
+  if (transText) {
+    let transSpan = document.createElement("span");
+    transSpan.className = "trans-text";
+    transSpan.innerText = transText;
+    div.appendChild(transSpan);
   }
 
   // 클릭 시 원문 + 번역문 전체 복사
@@ -328,9 +403,20 @@ function flushBuffer() {
   let finalText = textBuffer.trim();
   textBuffer = "";
 
-  let lines = splitText(finalText);
-  lines.forEach(t => createLine(t));
+  const chunkEndMs = Date.now() - sessionStartTime;
+  const lines = splitText(finalText);
 
+  // 분할된 라인별 시간 분배
+  const totalDuration = Math.max(chunkEndMs - chunkStartTime, 1000);
+  const lineDuration = totalDuration / lines.length;
+
+  lines.forEach((t, idx) => {
+    const lineStart = Math.round(chunkStartTime + (idx * lineDuration));
+    const lineEnd = Math.round(chunkStartTime + ((idx + 1) * lineDuration));
+    createLine(t, lineStart, lineEnd);
+  });
+
+  chunkStartTime = chunkEndMs; // 다음 청크 시작 시간 갱신
   clearLive();
 }
 
@@ -376,6 +462,41 @@ recognition.onerror = function(event) {
     stopListening();
   }
 };
+
+// --------------------
+// EXPORT SRT FILE
+// --------------------
+function exportSRT(mode) {
+  if (subtitleRecords.length === 0) {
+    alert("다운로드할 자막 데이터가 없습니다.");
+    return;
+  }
+
+  let srtContent = "";
+
+  subtitleRecords.forEach((item, i) => {
+    srtContent += `${i + 1}\n`;
+    srtContent += `${formatSRTTime(item.startMs)} --> ${formatSRTTime(item.endMs)}\n`;
+    
+    if (mode === 'ko') {
+      srtContent += `${item.ko}\n\n`;
+    } else if (mode === 'both') {
+      srtContent += `${item.ko}\n`;
+      if (item.trans) srtContent += `${item.trans}\n`;
+      srtContent += `\n`;
+    }
+  });
+
+  const blob = new Blob([srtContent], { type: "text/plain;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `KIZPOP_Subtitle_${Date.now()}.srt`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
 </script>
 </body>
 </html>
