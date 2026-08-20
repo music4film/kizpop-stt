@@ -1,386 +1,313 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
 <meta charset="UTF-8">
-<title></title>
-<style type="text/css">body{
-background:#0f0f0f;
-color:#ffffff;
-font-family:Arial,sans-serif;
-padding:30px;
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KIZPOP STT FINAL ULTRA v6</title>
+<style type="text/css">
+body {
+  background: #0f0f0f;
+  color: #ffffff;
+  font-family: 'Pretendard', Arial, sans-serif;
+  padding: 20px;
+  margin: 0;
 }
 
 /* TITLE */
-
-h2{
-margin-bottom:12px;
-font-size:20px;
-font-weight:900;
-letter-spacing:0.6px;
-color:#ffffff;
+h2 {
+  margin-bottom: 8px;
+  font-size: 22px;
+  font-weight: 900;
+  letter-spacing: 0.6px;
+  color: #ffffff;
+  text-align: center;
 }
 
-h2::before{
-content:"● ";
-color:#ff3d00;
+h2::before {
+  content: "● ";
+  color: #ff3d00;
 }
 
-/* STATUS */
+/* CONTROLS & STATUS */
+.status-bar {
+  text-align: center;
+  margin-bottom: 15px;
+}
 
-.status{
-font-size:12px;
-opacity:.65;
-margin-bottom:10px;
+.status {
+  font-size: 13px;
+  opacity: 0.75;
+  margin-bottom: 10px;
+}
+
+.btn-toggle {
+  background: #ff3d00;
+  color: #fff;
+  border: none;
+  padding: 10px 24px;
+  font-size: 15px;
+  font-weight: bold;
+  border-radius: 20px;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.btn-toggle.active {
+  background: #00c853;
 }
 
 /* TEXT AREA */
-
-#lines{
-margin-top:20px;
-max-width:900px;
-height:520px;
-overflow-y:auto;
-border:1px solid #333;
-padding:12px;
-margin-left:auto;
-margin-right:auto;
+#lines {
+  margin-top: 15px;
+  max-width: 900px;
+  height: 540px;
+  overflow-y: auto;
+  border: 1px solid #333;
+  padding: 15px;
+  margin-left: auto;
+  margin-right: auto;
+  border-radius: 8px;
+  background: #141414;
 }
 
 /* CAPTION LINE */
-
-.line{
-background:#1e1e1e;
-color:#ffffff;
-padding:12px;
-border-radius:10px;
-margin-bottom:8px;
-cursor:pointer;
-transition:.15s;
-font-size:18px;
-line-height:1.4;
-white-space:pre-line;
+.line {
+  background: #1e1e1e;
+  color: #ffffff;
+  padding: 12px 16px;
+  border-radius: 8px;
+  margin-bottom: 10px;
+  cursor: pointer;
+  transition: background 0.15s;
+  font-size: 18px;
+  line-height: 1.4;
+  white-space: pre-line;
+  word-break: keep-all;
 }
 
-.line:hover{
-background:#2962ff;
+.line:hover {
+  background: #2962ff;
 }
 
-.copied{
-background:#00c853 !important;
+.copied {
+  background: #00c853 !important;
 }
 
-.new{
-outline:2px solid #ffaa00;
+.new {
+  outline: 2px solid #ffaa00;
 }
 
-.live{
-opacity:.5;
-font-style:italic;
+.live {
+  opacity: 0.5;
+  font-style: italic;
+  border-left: 3px solid #ff3d00;
+  padding-left: 10px;
+  background: transparent;
 }
 </style>
-<h2 style="text-align:center;"><span style="color:#999999;">KIZPOP STT FINAL ULTRA v5</span></h2>
+</head>
+<body>
 
-<div class="status" style="text-align:center;">Auto Listening / Real-time STT / Click line &rarr; Copy &rarr; Vegas Paste</div>
+<h2><span style="color:#999999;">KIZPOP STT FINAL ULTRA v6</span></h2>
 
-<div id="lines">&nbsp;</div>
+<div class="status-bar">
+  <div class="status">Real-time STT / Click line &rarr; Copy &rarr; Vegas Paste</div>
+  <button id="startBtn" class="btn-toggle" onclick="toggleSTT()">음성 인식 시작</button>
+</div>
+
+<div id="lines"></div>
+
 <script>
+const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 
-const SpeechRecognition =
-window.SpeechRecognition || window.webkitSpeechRecognition
+if (!SpeechRecognition) {
+  alert("이 브라우저는 음성 인식을 지원하지 않습니다. Chrome 또는 Edge 브라우저를 사용해 주세요.");
+}
 
-const recognition = new SpeechRecognition()
+const recognition = new SpeechRecognition();
+recognition.lang = "ko-KR";
+recognition.continuous = true;
+recognition.interimResults = true;
+recognition.maxAlternatives = 1;
 
-recognition.lang="ko-KR"
-recognition.continuous=true
-recognition.interimResults=true
-recognition.maxAlternatives=1
+let isListening = false;
+let textBuffer = "";
+let liveLine = null;
+let autoScroll = true;
 
-
-let recognizing=false
-let silenceTimer=null
-
-let lastText=""
-let textBuffer=""
-
-const linesDiv=document.getElementById("lines")
-
-let autoScroll=true
-let liveLine=null
-
-
+const linesDiv = document.getElementById("lines");
+const startBtn = document.getElementById("startBtn");
 
 // --------------------
 // USER SCROLL LOCK
 // --------------------
-
-linesDiv.addEventListener("scroll",()=>{
-
-const bottom =
-linesDiv.scrollHeight - linesDiv.scrollTop - linesDiv.clientHeight
-
-autoScroll = bottom < 120
-
-})
-
-
+linesDiv.addEventListener("scroll", () => {
+  const bottom = linesDiv.scrollHeight - linesDiv.scrollTop - linesDiv.clientHeight;
+  autoScroll = bottom < 120;
+});
 
 // --------------------
-// LIVE TEXT
+// STT START / STOP TOGGLE
 // --------------------
-
-function showLive(text){
-
-if(!liveLine){
-
-liveLine=document.createElement("div")
-liveLine.className="line live"
-
-linesDiv.appendChild(liveLine)
-
+function toggleSTT() {
+  if (isListening) {
+    stopListening();
+  } else {
+    startListening();
+  }
 }
 
-liveLine.innerText=text
-
-if(autoScroll){
-linesDiv.scrollTop=linesDiv.scrollHeight
+function startListening() {
+  try {
+    recognition.start();
+    isListening = true;
+    startBtn.innerText = "음성 인식 중 (클릭하여 정지)";
+    startBtn.classList.add("active");
+  } catch (e) {
+    console.error("STT Start Error:", e);
+  }
 }
 
+function stopListening() {
+  isListening = false;
+  recognition.stop();
+  flushBuffer();
+  startBtn.innerText = "음성 인식 시작";
+  startBtn.classList.remove("active");
 }
-
-
-function clearLive(){
-
-if(liveLine){
-
-liveLine.remove()
-liveLine=null
-
-}
-
-}
-
-
 
 // --------------------
-// CONTEXT SPLIT ENGINE
+// LIVE TEXT DISPLAY
 // --------------------
+function showLive(text) {
+  if (!liveLine) {
+    liveLine = document.createElement("div");
+    liveLine.className = "line live";
+    linesDiv.appendChild(liveLine);
+  }
+  liveLine.innerText = text;
 
-function splitText(text){
-
-let result=[]
-
-let sentences=text.split(/(?<=[.!?])/)
-
-sentences.forEach(sentence=>{
-
-sentence=sentence.trim()
-
-let phraseSplit=
-sentence.split(/(은|는|이|가|을|를|에서|그리고|그런데|그래서|하지만)/)
-
-let buffer=""
-
-phraseSplit.forEach(word=>{
-
-buffer+=word
-
-// &#x1f525; Vegas 자막 가독성 기준
-if(buffer.length>14){
-
-result.push(buffer.trim())
-buffer=""
-
+  if (autoScroll) {
+    linesDiv.scrollTop = linesDiv.scrollHeight;
+  }
 }
 
-})
-
-if(buffer.length>0){
-result.push(buffer.trim())
+function clearLive() {
+  if (liveLine) {
+    liveLine.remove();
+    liveLine = null;
+  }
 }
-
-})
-
-return result
-
-}
-
-
 
 // --------------------
-// LINE CREATE
+// SMART KOREAN SPLIT ENGINE (Vegas 자막용)
 // --------------------
+function splitText(text) {
+  const MAX_LEN = 16; // 한 자막당 최대 자수 (Vegas 가독성 기준)
+  const words = text.split(/\s+/);
+  const result = [];
+  let current = "";
 
-function createLine(text){
+  words.forEach(word => {
+    if ((current + " " + word).trim().length > MAX_LEN) {
+      if (current) result.push(current.trim());
+      current = word;
+    } else {
+      current = (current + " " + word).trim();
+    }
+  });
 
-let div=document.createElement("div")
+  if (current) {
+    result.push(current.trim());
+  }
 
-div.className="line new"
-
-div.innerText=text
-
-div.onclick=function(){
-
-navigator.clipboard.writeText(text)
-
-div.classList.add("copied")
-
-setTimeout(()=>{
-div.classList.remove("copied")
-},500)
-
+  return result;
 }
-
-linesDiv.appendChild(div)
-
-setTimeout(()=>div.classList.remove("new"),800)
-
-if(autoScroll){
-linesDiv.scrollTop=linesDiv.scrollHeight
-}
-
-}
-
-
 
 // --------------------
-// &#x1f525; BUFFER FLUSH
+// LINE CREATION & CLIPBOARD
 // --------------------
+function createLine(text) {
+  if (!text || text.trim() === "") return;
 
-function flushBuffer(){
+  let div = document.createElement("div");
+  div.className = "line new";
+  div.innerText = text;
 
-if(textBuffer.trim().length===0) return
+  div.onclick = function() {
+    navigator.clipboard.writeText(text).then(() => {
+      div.classList.add("copied");
+      setTimeout(() => div.classList.remove("copied"), 500);
+    });
+  };
 
-let finalText=textBuffer.trim()
-textBuffer=""
+  linesDiv.appendChild(div);
+  setTimeout(() => div.classList.remove("new"), 800);
 
-if(finalText===lastText) return
-
-lastText=finalText
-
-let lines=splitText(finalText)
-
-lines.forEach(t=>createLine(t))
-
-clearLive()
-
+  if (autoScroll) {
+    linesDiv.scrollTop = linesDiv.scrollHeight;
+  }
 }
-
-
-
-// --------------------
-// STT RESULT
-// --------------------
-
-recognition.onresult=function(event){
-
-for(let i=event.resultIndex;i<event.results.length;i++){
-
-let transcript=event.results[i][0].transcript.trim()
-
-
-// LIVE TEXT
-
-if(!event.results[i].isFinal){
-
-showLive(transcript)
-continue
-
-}
-
-
-clearLive()
-
-
-// BUFFER 누적
-
-textBuffer += " " + transcript
-textBuffer = textBuffer.trim()
-
-
-// 긴 문장 or 마침표 시 바로 출력
-
-if(textBuffer.length > 20 || /[.!?]$/.test(textBuffer)){
-
-flushBuffer()
-
-}
-
-}
-
-}
-
-
 
 // --------------------
-// STT AUTO RESTART
+// BUFFER FLUSH
 // --------------------
+function flushBuffer() {
+  if (textBuffer.trim().length === 0) return;
 
-recognition.onend=function(){
+  let finalText = textBuffer.trim();
+  textBuffer = "";
 
-if(recognizing){
-recognition.start()
+  let lines = splitText(finalText);
+  lines.forEach(t => createLine(t));
+
+  clearLive();
 }
-
-}
-
-
 
 // --------------------
-// AUDIO DETECT
+// STT RESULT HANDLER
 // --------------------
+recognition.onresult = function(event) {
+  for (let i = event.resultIndex; i < event.results.length; i++) {
+    let transcript = event.results[i][0].transcript.trim();
 
-navigator.mediaDevices.getUserMedia({audio:true}).then(stream=>{
+    if (!event.results[i].isFinal) {
+      showLive(transcript);
+      continue;
+    }
 
-const audioContext=new AudioContext()
+    clearLive();
+    textBuffer += " " + transcript;
+    textBuffer = textBuffer.trim();
 
-const mic=audioContext.createMediaStreamSource(stream)
+    // 18자 이상이거나 마침표/물음표가 있을 때 자막 분할 출력
+    if (textBuffer.length > 18 || /[.!?]$/.test(textBuffer)) {
+      flushBuffer();
+    }
+  }
+};
 
-const analyser=audioContext.createAnalyser()
+// --------------------
+// AUTO RECONNECT (크롬 자동 끊김 방지)
+// --------------------
+recognition.onend = function() {
+  if (isListening) {
+    // 크롬 특성상 일정 무음 후 자동 종료되므로 사용자가 끄지 않았다면 재시작
+    setTimeout(() => {
+      if (isListening) {
+        try { recognition.start(); } catch (e) {}
+      }
+    }, 100);
+  }
+};
 
-analyser.fftSize=512
-
-mic.connect(analyser)
-
-const data=new Uint8Array(analyser.frequencyBinCount)
-
-
-function detect(){
-
-analyser.getByteFrequencyData(data)
-
-let volume=data.reduce((a,b)=>a+b)/data.length
-
-
-if(volume>25){
-
-if(!recognizing){
-
-recognition.start()
-recognizing=true
-
-}
-
-clearTimeout(silenceTimer)
-
-silenceTimer=setTimeout(()=>{
-
-// &#x1f525; 음성 멈추면 바로 자막 생성
-flushBuffer()
-
-if(recognizing){
-
-recognition.stop()
-recognizing=false
-
-}
-
-},1200)
-
-}
-
-requestAnimationFrame(detect)
-
-}
-
-detect()
-
-})
-
+recognition.onerror = function(event) {
+  console.warn("STT Error:", event.error);
+  if (event.error === 'not-allowed') {
+    alert("마이크 접근 권한이 거부되었습니다. 브라우저 주소창 왼쪽의 마이크 허용 설정을 확인해 주세요.");
+    stopListening();
+  }
+};
 </script>
+</body>
+</html>
