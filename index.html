@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>KIZPOP STT & TRANSLATOR ULTRA v11</title>
+<title>KIZPOP STT & TRANSLATOR ULTRA v11.1</title>
 <style type="text/css">
 * {
   box-sizing: border-box;
@@ -295,10 +295,10 @@ h2::before {
 </head>
 <body>
 
-<h2><span style="color:#999999;">KIZPOP STT & TRANSLATOR ULTRA v11</span></h2>
+<h2><span style="color:#999999;">KIZPOP STT & TRANSLATOR ULTRA v11.1</span></h2>
 
 <div class="status-bar">
-  <div class="status">타임라인 동기화 정렬 / 듀얼 패널 / 한글 발음 표기 지원</div>
+  <div class="status">타임라인 동기화 정렬 / 듀얼 패널 / 한글 음차 발음 표기 지원</div>
   <div class="controls">
     <button id="startBtn" class="btn btn-toggle" onclick="toggleSTT()">음성 인식 시작</button>
     <select id="targetLang" class="lang-select" onchange="onLangChange()">
@@ -576,7 +576,7 @@ function clearLive() {
 }
 
 // --------------------------------------------------
-// TRANSLATION & PHONETICS ENGINE
+// TRANSLATION ENGINE
 // --------------------------------------------------
 async function fetchTranslation(text, targetLang) {
   if (!targetLang || targetLang === "none" || !text.trim()) return "";
@@ -591,7 +591,9 @@ async function fetchTranslation(text, targetLang) {
   }
 }
 
-// Japanese Kana to Hangul Converter Map
+// --------------------------------------------------
+// HANGUL PHONETIC TRANSLITERATION ENGINE
+// --------------------------------------------------
 const kanaToHangulMap = {
   'あ':'아','い':'이','う':'우','え':'에','お':'오',
   'か':'카','き':'키','く':'쿠','け':'케','こ':'코',
@@ -620,10 +622,89 @@ const kanaToHangulMap = {
   'ワ':'와','ヲ':'오','ン':'응'
 };
 
+const enPhoneticDict = {
+  "hi": "하이", "hello": "헬로", "hey": "헤이", "good": "굿", "morning": "모닝",
+  "afternoon": "애프터눈", "evening": "이브닝", "night": "나이트", "bye": "바이",
+  "goodbye": "굿바이", "see": "시", "you": "유", "later": "레이터", "thank": "탱크",
+  "thanks": "탱크스", "welcome": "웰컴", "please": "플리즈", "sorry": "소리",
+  "yes": "예스", "no": "노", "ok": "오케이", "okay": "오케이", "what": "왓",
+  "where": "웨어", "when": "웬", "why": "와이", "how": "하우", "who": "후",
+  "nice": "나이스", "meet": "미트", "love": "러브", "like": "라이크",
+  "friend": "프렌드", "music": "뮤직", "song": "송", "teacher": "티처",
+  "boss": "뽀스", "kizpop": "키즈팝", "i": "아이", "my": "마이", "me": "미",
+  "your": "유어", "he": "히", "she": "쉬", "we": "위", "they": "데이",
+  "is": "이즈", "am": "앰", "are": "아", "do": "두", "can": "캔", "will": "윌",
+  "have": "해브", "go": "고", "come": "컴", "want": "원트", "think": "씽크"
+};
+
+function convertEnglishToHangulPhonetic(transText) {
+  if (!transText) return "";
+  const words = transText.split(/\s+/);
+  
+  return words.map(rawWord => {
+    const cleanWord = rawWord.toLowerCase().replace(/[^a-z]/g, '');
+    const punctuation = rawWord.replace(/[a-zA-Z]/g, '');
+
+    if (enPhoneticDict[cleanWord]) {
+      return enPhoneticDict[cleanWord] + punctuation;
+    }
+
+    let w = cleanWord;
+    if (!w) return rawWord;
+
+    w = w.replace(/tion/g, "션").replace(/sion/g, "션")
+         .replace(/th/g, "쓰").replace(/sh/g, "쉬")
+         .replace(/ch/g, "치").replace(/ph/g, "프")
+         .replace(/ck/g, "크").replace(/ng/g, "잉")
+         .replace(/ee/g, "이").replace(/ea/g, "이")
+         .replace(/oo/g, "우").replace(/ou/g, "아우")
+         .replace(/ow/g, "아우").replace(/ai/g, "에이")
+         .replace(/ay/g, "에이").replace(/oa/g, "오")
+         .replace(/ar/g, "아").replace(/or/g, "오")
+         .replace(/er/g, "어").replace(/ir/g, "어")
+         .replace(/ur/g, "어");
+
+    let res = "";
+    for (let i = 0; i < w.length; i++) {
+      const char = w[i];
+      if (/[가-힣]/.test(char)) { res += char; continue; }
+      switch(char) {
+        case 'a': res += "아"; break;
+        case 'b': res += "브"; break;
+        case 'c': res += "크"; break;
+        case 'd': res += "드"; break;
+        case 'e': res += "에"; break;
+        case 'f': res += "프"; break;
+        case 'g': res += "그"; break;
+        case 'h': res += "흐"; break;
+        case 'i': res += "이"; break;
+        case 'j': res += "제이"; break;
+        case 'k': res += "크"; break;
+        case 'l': res += "엘"; break;
+        case 'm': res += "엠"; break;
+        case 'n': res += "엔"; break;
+        case 'o': res += "오"; break;
+        case 'p': res += "프"; break;
+        case 'q': res += "큐"; break;
+        case 'r': res += "알"; break;
+        case 's': res += "스"; break;
+        case 't': res += "트"; break;
+        case 'u': res += "우"; break;
+        case 'v': res += "브"; break;
+        case 'w': res += "우"; break;
+        case 'x': res += "엑스"; break;
+        case 'y': res += "와이"; break;
+        case 'z': res += "즈"; break;
+        default: res += char;
+      }
+    }
+    return res + punctuation;
+  }).join(" ");
+}
+
 async function fetchPhonetic(transText, targetLang) {
   if (!transText || !transText.trim()) return "";
 
-  // 1. Japanese Kana Direct Hangul Phonetic Conversion
   if (targetLang === "ja") {
     let result = "";
     for (let char of transText) {
@@ -632,19 +713,8 @@ async function fetchPhonetic(transText, targetLang) {
     if (result !== transText) return result;
   }
 
-  // 2. English & Other Languages: Transliteration via Google Translate
-  try {
-    const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=${targetLang}&tl=ko&dt=t&dt=rm&q=${encodeURIComponent(transText)}`;
-    const response = await fetch(url);
-    const data = await response.json();
-    
-    // Check for transliterated Hangul or phonetic reading
-    if (data && data[0]) {
-      let candidate = data[0].map(item => item[0]).join(' ');
-      if (candidate) return candidate;
-    }
-  } catch (e) {
-    console.warn("Phonetic fetch fallback:", e);
+  if (targetLang === "en" || /[a-zA-Z]/.test(transText)) {
+    return convertEnglishToHangulPhonetic(transText);
   }
 
   return "";
@@ -706,7 +776,6 @@ async function createLine(text, startMs, endMs) {
   const recordIndex = subtitleRecords.length;
   const timeFormatted = `[${formatSRTTime(startMs)} --> ${formatSRTTime(endMs)}]`;
 
-  // Create Data Record
   const record = {
     index: recordIndex + 1,
     startMs: startMs,
@@ -717,7 +786,6 @@ async function createLine(text, startMs, endMs) {
   };
   subtitleRecords.push(record);
 
-  // 1. Create Left DOM Element (Korean Original) SYNCHRONOUSLY
   const koDiv = document.createElement("div");
   koDiv.className = "line new";
   koDiv.id = `ko-line-${recordIndex}`;
@@ -725,26 +793,22 @@ async function createLine(text, startMs, endMs) {
   koDiv.onclick = () => copyText(koDiv, text);
   linesKoDiv.appendChild(koDiv);
 
-  // 2. Create Right DOM Element (Translation Placeholder) SYNCHRONOUSLY
   const transDiv = document.createElement("div");
   transDiv.className = "line new";
   transDiv.id = `trans-line-${recordIndex}`;
   transDiv.innerHTML = `<span class="time-tag">${timeFormatted}</span><span class="loading-text">번역 불러오는 중...</span>`;
   linesTransDiv.appendChild(transDiv);
 
-  // Auto Scroll Synchronized
   if (autoScroll) {
     linesKoDiv.scrollTop = linesKoDiv.scrollHeight;
     linesTransDiv.scrollTop = linesTransDiv.scrollHeight;
   }
 
-  // Highlight effect removal
   setTimeout(() => {
     koDiv.classList.remove("new");
     transDiv.classList.remove("new");
   }, 800);
 
-  // 3. ASYNCHRONOUS TRANSLATION & PHONETICS UPDATE
   const selectedLang = targetLangSelect.value;
   if (selectedLang !== "none") {
     const transText = await fetchTranslation(text, selectedLang);
