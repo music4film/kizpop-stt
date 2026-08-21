@@ -3,18 +3,23 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>KIZPOP STT & TRANSLATOR ULTRA v10</title>
+<title>KIZPOP STT & TRANSLATOR ULTRA v11</title>
 <style type="text/css">
+* {
+  box-sizing: border-box;
+}
+
 body {
   background: #0f0f0f;
   color: #ffffff;
   font-family: 'Pretendard', Arial, sans-serif;
-  padding: 20px;
+  padding: 15px;
   margin: 0;
 }
 
 /* TITLE */
 h2 {
+  margin-top: 5px;
   margin-bottom: 8px;
   font-size: 22px;
   font-weight: 900;
@@ -44,7 +49,7 @@ h2::before {
   display: flex;
   justify-content: center;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   flex-wrap: wrap;
 }
 
@@ -52,8 +57,8 @@ h2::before {
   background: #2a2a2a;
   color: #fff;
   border: 1px solid #444;
-  padding: 9px 18px;
-  font-size: 14px;
+  padding: 9px 16px;
+  font-size: 13px;
   font-weight: bold;
   border-radius: 20px;
   cursor: pointer;
@@ -91,12 +96,22 @@ h2::before {
   background: #8e24aa;
 }
 
+.btn-phono {
+  background: #f57c00;
+  border: none;
+}
+
+.btn-phono.active {
+  background: #e65100;
+  box-shadow: 0 0 8px rgba(255, 152, 0, 0.6);
+}
+
 .lang-select {
   background: #2a2a2a;
   color: #fff;
   border: 1px solid #444;
-  padding: 9px 16px;
-  font-size: 14px;
+  padding: 9px 14px;
+  font-size: 13px;
   border-radius: 20px;
   outline: none;
   cursor: pointer;
@@ -105,8 +120,8 @@ h2::before {
 /* DICTIONARY PANEL */
 #dictModal {
   display: none;
-  max-width: 900px;
-  margin: 15px auto 0 auto;
+  max-width: 1200px;
+  margin: 10px auto 15px auto;
   background: #1a1a1a;
   border: 1px solid #333;
   border-radius: 8px;
@@ -156,34 +171,73 @@ h2::before {
   font-weight: bold;
 }
 
-/* TEXT AREA */
-#lines {
-  margin-top: 15px;
-  max-width: 900px;
-  height: 500px;
-  overflow-y: auto;
-  border: 1px solid #333;
-  padding: 15px;
-  margin-left: auto;
-  margin-right: auto;
-  border-radius: 8px;
-  background: #141414;
+/* TWO COLUMN DUAL DISPLAY GRID */
+.main-display {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  max-width: 1400px;
+  margin: 0 auto;
 }
 
-/* CAPTION LINE */
+@media (max-width: 768px) {
+  .main-display {
+    grid-template-columns: 1fr;
+  }
+}
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  background: #141414;
+  border: 1px solid #333;
+  border-radius: 10px;
+  overflow: hidden;
+  height: 580px;
+}
+
+.panel-header {
+  background: #1f1f1f;
+  padding: 10px 16px;
+  font-size: 14px;
+  font-weight: bold;
+  border-bottom: 1px solid #333;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.panel-header .badge {
+  font-size: 11px;
+  padding: 3px 8px;
+  border-radius: 10px;
+  background: #333;
+  color: #ffca28;
+}
+
+.lines-box {
+  flex: 1;
+  padding: 15px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* CAPTION LINE STYLE */
 .line {
   background: #1e1e1e;
   color: #ffffff;
-  padding: 12px 16px;
+  padding: 12px 14px;
   border-radius: 8px;
-  margin-bottom: 10px;
   cursor: pointer;
   transition: background 0.15s;
-  font-size: 18px;
+  font-size: 17px;
   line-height: 1.4;
   white-space: pre-line;
   word-break: keep-all;
   position: relative;
+  min-height: 55px;
 }
 
 .line:hover {
@@ -194,16 +248,26 @@ h2::before {
   font-size: 11px;
   color: #ff3d00;
   font-weight: bold;
-  margin-bottom: 4px;
+  margin-bottom: 5px;
   display: block;
 }
 
-.trans-text {
+.trans-content {
   display: block;
-  font-size: 14px;
   color: #ffca28;
-  margin-top: 4px;
+  font-size: 16px;
+}
+
+.phono-text {
+  display: block;
+  font-size: 13px;
+  color: #00e676;
+  margin-top: 6px;
   font-weight: normal;
+  background: rgba(0, 230, 118, 0.08);
+  padding: 4px 8px;
+  border-radius: 4px;
+  border-left: 2px solid #00e676;
 }
 
 .copied {
@@ -215,23 +279,29 @@ h2::before {
 }
 
 .live {
-  opacity: 0.5;
+  opacity: 0.55;
   font-style: italic;
   border-left: 3px solid #ff3d00;
   padding-left: 10px;
   background: transparent;
 }
+
+.loading-text {
+  opacity: 0.5;
+  font-size: 13px;
+  font-style: italic;
+}
 </style>
 </head>
 <body>
 
-<h2><span style="color:#999999;">KIZPOP STT & TRANSLATOR ULTRA v10</span></h2>
+<h2><span style="color:#999999;">KIZPOP STT & TRANSLATOR ULTRA v11</span></h2>
 
 <div class="status-bar">
-  <div class="status">Real-time STT / Custom Dict UI / Silence Cut SRT</div>
+  <div class="status">타임라인 동기화 정렬 / 듀얼 패널 / 한글 발음 표기 지원</div>
   <div class="controls">
     <button id="startBtn" class="btn btn-toggle" onclick="toggleSTT()">음성 인식 시작</button>
-    <select id="targetLang" class="lang-select">
+    <select id="targetLang" class="lang-select" onchange="onLangChange()">
       <option value="none">번역 안 함 (한국어만)</option>
       <option value="en" selected>영어 (English)</option>
       <option value="ja">일본어 (日本語)</option>
@@ -257,6 +327,7 @@ h2::before {
       <option value="uk">우크라이나어 (Українська)</option>
       <option value="mn">몽골어 (Монгол)</option>
     </select>
+    <button id="phonoBtn" class="btn btn-phono" onclick="togglePhonetic()">한글 발음 표기 [OFF]</button>
     <button class="btn btn-dict" onclick="toggleDictUI()">교정 사전 설정</button>
     <button class="btn btn-download" onclick="exportSRT('ko')">SRT 받기 (원문)</button>
     <button class="btn btn-download" onclick="exportSRT('both')">SRT 받기 (통합)</button>
@@ -275,7 +346,26 @@ h2::before {
   <div id="dictList" class="dict-list"></div>
 </div>
 
-<div id="lines"></div>
+<!-- DUAL COLUMN DISPLAY -->
+<div class="main-display">
+  <!-- LEFT: KOREAN STT -->
+  <div class="panel">
+    <div class="panel-header">
+      <span>🎙️ 한국어 원문 자막</span>
+      <span class="badge">KO-KR</span>
+    </div>
+    <div id="linesKo" class="lines-box"></div>
+  </div>
+
+  <!-- RIGHT: TRANSLATED TEXT -->
+  <div class="panel">
+    <div class="panel-header">
+      <span>🌐 번역 선택 언어 창</span>
+      <span id="targetLangBadge" class="badge">English</span>
+    </div>
+    <div id="linesTrans" class="lines-box"></div>
+  </div>
+</div>
 
 <script>
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -292,19 +382,24 @@ recognition.maxAlternatives = 1;
 
 let isListening = false;
 let textBuffer = "";
-let liveLine = null;
+let liveLineKo = null;
+let liveLineTrans = null;
 let autoScroll = true;
+let isPhoneticEnabled = false;
 
 let sessionStartTime = 0;
 let chunkStartTime = 0;
 let subtitleRecords = [];
 
-const linesDiv = document.getElementById("lines");
+const linesKoDiv = document.getElementById("linesKo");
+const linesTransDiv = document.getElementById("linesTrans");
 const startBtn = document.getElementById("startBtn");
 const targetLangSelect = document.getElementById("targetLang");
+const targetLangBadge = document.getElementById("targetLangBadge");
+const phonoBtn = document.getElementById("phonoBtn");
 
 // --------------------------------------------------
-// CUSTOM DICTIONARY SYSTEM (LOCAL STORAGE PERSISTENCE)
+// CUSTOM DICTIONARY SYSTEM
 // --------------------------------------------------
 const defaultDict = {
   "아버지 가방에": "아버지가 방에",
@@ -312,6 +407,7 @@ const defaultDict = {
   "키즈 팝": "키즈팝",
   "보스샘": "뽀스쌤",
   "보스 쌤": "뽀스쌤",
+  "안선우": "안선우",
   "베가스": "Vegas",
   "프리미어": "Premiere"
 };
@@ -365,20 +461,42 @@ function applyCustomCorrections(text) {
   return corrected;
 }
 
-// Initial Dict Render
 renderDict();
 
-// --------------------
-// USER SCROLL LOCK
-// --------------------
-linesDiv.addEventListener("scroll", () => {
-  const bottom = linesDiv.scrollHeight - linesDiv.scrollTop - linesDiv.clientHeight;
+// --------------------------------------------------
+// SCROLL SYNC & TOGGLES
+// --------------------------------------------------
+linesKoDiv.addEventListener("scroll", () => {
+  const bottom = linesKoDiv.scrollHeight - linesKoDiv.scrollTop - linesKoDiv.clientHeight;
   autoScroll = bottom < 120;
+  linesTransDiv.scrollTop = linesKoDiv.scrollTop;
 });
 
-// --------------------
+linesTransDiv.addEventListener("scroll", () => {
+  linesKoDiv.scrollTop = linesTransDiv.scrollTop;
+});
+
+function togglePhonetic() {
+  isPhoneticEnabled = !isPhoneticEnabled;
+  if (isPhoneticEnabled) {
+    phonoBtn.innerText = "한글 발음 표기 [ON]";
+    phonoBtn.classList.add("active");
+  } else {
+    phonoBtn.innerText = "한글 발음 표기 [OFF]";
+    phonoBtn.classList.remove("active");
+  }
+  reRenderAllTranslations();
+}
+
+function onLangChange() {
+  const selectedText = targetLangSelect.options[targetLangSelect.selectedIndex].text;
+  targetLangBadge.innerText = selectedText.split(' ')[0];
+  reRenderAllTranslations();
+}
+
+// --------------------------------------------------
 // STT CONTROL
-// --------------------
+// --------------------------------------------------
 function toggleSTT() {
   if (isListening) {
     stopListening();
@@ -412,39 +530,54 @@ function stopListening() {
 
 function clearAllData() {
   if (confirm("모든 자막과 타임코드 데이터를 초기화하시겠습니까?")) {
-    linesDiv.innerHTML = "";
+    linesKoDiv.innerHTML = "";
+    linesTransDiv.innerHTML = "";
     subtitleRecords = [];
     sessionStartTime = 0;
     textBuffer = "";
   }
 }
 
-// --------------------
+// --------------------------------------------------
 // LIVE DISPLAY
-// --------------------
+// --------------------------------------------------
 function showLive(text) {
-  if (!liveLine) {
-    liveLine = document.createElement("div");
-    liveLine.className = "line live";
-    linesDiv.appendChild(liveLine);
+  const corrected = applyCustomCorrections(text);
+  
+  if (!liveLineKo) {
+    liveLineKo = document.createElement("div");
+    liveLineKo.className = "line live";
+    linesKoDiv.appendChild(liveLineKo);
   }
-  liveLine.innerText = applyCustomCorrections(text);
+  liveLineKo.innerText = corrected;
+
+  if (!liveLineTrans) {
+    liveLineTrans = document.createElement("div");
+    liveLineTrans.className = "line live";
+    linesTransDiv.appendChild(liveLineTrans);
+  }
+  liveLineTrans.innerText = "(실시간 음성 수집 중...)";
 
   if (autoScroll) {
-    linesDiv.scrollTop = linesDiv.scrollHeight;
+    linesKoDiv.scrollTop = linesKoDiv.scrollHeight;
+    linesTransDiv.scrollTop = linesTransDiv.scrollHeight;
   }
 }
 
 function clearLive() {
-  if (liveLine) {
-    liveLine.remove();
-    liveLine = null;
+  if (liveLineKo) {
+    liveLineKo.remove();
+    liveLineKo = null;
+  }
+  if (liveLineTrans) {
+    liveLineTrans.remove();
+    liveLineTrans = null;
   }
 }
 
-// --------------------
-// TRANSLATION
-// --------------------
+// --------------------------------------------------
+// TRANSLATION & PHONETICS ENGINE
+// --------------------------------------------------
 async function fetchTranslation(text, targetLang) {
   if (!targetLang || targetLang === "none" || !text.trim()) return "";
   try {
@@ -458,9 +591,68 @@ async function fetchTranslation(text, targetLang) {
   }
 }
 
-// --------------------
+// Japanese Kana to Hangul Converter Map
+const kanaToHangulMap = {
+  'あ':'아','い':'이','う':'우','え':'에','お':'오',
+  'か':'카','き':'키','く':'쿠','け':'케','こ':'코',
+  'さ':'사','し':'시','す':'스','せ':'세','そ':'소',
+  'た':'타','ち':'치','つ':'츠','て':'테','と':'토',
+  'な':'나','に':'니','ぬ':'누','ね':'네','の':'노',
+  'は':'하','ひ':'히','ふ':'후','へ':'헤','ほ':'호',
+  'ま':'마','み':'미','む':'무','め':'메','も':'모',
+  'や':'야','ゆ':'유','よ':'요',
+  'ら':'라','り':'리','る':'루','れ':'레','ろ':'로',
+  'わ':'와','を':'오','ん':'응',
+  'が':'가','ぎ':'기','ぐ':'구','げ':'게','ご':'고',
+  'ざ':'자','じ':'지','ず':'즈','ぜ':'제','ぞ':'조',
+  'だ':'다','ぢ':'지','づ':'즈','で':'데','ど':'도',
+  'ば':'바','び':'비','ぶ':'부','べ':'베','ぼ':'보',
+  'ぱ':'파','ぴ':'피','ぷ':'푸','ぺ':'페','ぽ':'포',
+  'ア':'아','イ':'이','ウ':'우','エ':'에','オ':'오',
+  'カ':'카','キ':'키','ク':'쿠','ケ':'케','コ':'코',
+  'サ':'사','シ':'시','ス':'스','セ':'세','ソ':'소',
+  'タ':'타','チ':'치','ツ':'츠','テ':'테','ト':'토',
+  'ナ':'나','ニ':'니','ヌ':'누','ネ':'네','ノ':'노',
+  'ハ':'하','ヒ':'히','フ':'후','ヘ':'헤','ホ':'호',
+  'マ':'마','ミ':'미','ム':'무','メ':'메','モ':'모',
+  'ヤ':'야','ユ':'유','ヨ':'요',
+  'ラ':'라','リ':'리','ル':'루','レ':'레','ロ':'로',
+  'ワ':'와','ヲ':'오','ン':'응'
+};
+
+async function fetchPhonetic(transText, targetLang) {
+  if (!transText || !transText.trim()) return "";
+
+  // 1. Japanese Kana Direct Hangul Phonetic Conversion
+  if (targetLang === "ja") {
+    let result = "";
+    for (let char of transText) {
+      result += kanaToHangulMap[char] || char;
+    }
+    if (result !== transText) return result;
+  }
+
+  // 2. English & Other Languages: Transliteration via Google Translate
+  try {
+    const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=${targetLang}&tl=ko&dt=t&dt=rm&q=${encodeURIComponent(transText)}`;
+    const response = await fetch(url);
+    const data = await response.json();
+    
+    // Check for transliterated Hangul or phonetic reading
+    if (data && data[0]) {
+      let candidate = data[0].map(item => item[0]).join(' ');
+      if (candidate) return candidate;
+    }
+  } catch (e) {
+    console.warn("Phonetic fetch fallback:", e);
+  }
+
+  return "";
+}
+
+// --------------------------------------------------
 // SMART KOREAN SPLIT ENGINE
-// --------------------
+// --------------------------------------------------
 function smartKoreanSplit(text) {
   const TARGET_LEN = 14;
   const MAX_LEN = 20;
@@ -493,9 +685,9 @@ function smartKoreanSplit(text) {
   return result;
 }
 
-// --------------------
+// --------------------------------------------------
 // TIME FORMATTER
-// --------------------
+// --------------------------------------------------
 function formatSRTTime(ms) {
   let hrs = Math.floor(ms / 3600000);
   let mins = Math.floor((ms % 3600000) / 60000);
@@ -505,60 +697,117 @@ function formatSRTTime(ms) {
   return `${String(hrs).padStart(2, '0')}:${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')},${String(millis).padStart(3, '0')}`;
 }
 
-// --------------------
-// LINE & RECORD CREATION
-// --------------------
+// --------------------------------------------------
+// LINE CREATION & STRICT TIMELINE SYNCHRONIZATION
+// --------------------------------------------------
 async function createLine(text, startMs, endMs) {
-  if (!text || text.trim() === "") return;
+  if (!text || !text.trim()) return;
 
-  const selectedLang = targetLangSelect.value;
-  let transText = "";
+  const recordIndex = subtitleRecords.length;
+  const timeFormatted = `[${formatSRTTime(startMs)} --> ${formatSRTTime(endMs)}]`;
 
-  if (selectedLang !== "none") {
-    transText = await fetchTranslation(text, selectedLang);
-  }
-
+  // Create Data Record
   const record = {
-    index: subtitleRecords.length + 1,
+    index: recordIndex + 1,
     startMs: startMs,
     endMs: endMs,
     ko: text,
-    trans: transText
+    trans: "",
+    phono: ""
   };
   subtitleRecords.push(record);
 
-  let div = document.createElement("div");
-  div.className = "line new";
+  // 1. Create Left DOM Element (Korean Original) SYNCHRONOUSLY
+  const koDiv = document.createElement("div");
+  koDiv.className = "line new";
+  koDiv.id = `ko-line-${recordIndex}`;
+  koDiv.innerHTML = `<span class="time-tag">${timeFormatted}</span>${text}`;
+  koDiv.onclick = () => copyText(koDiv, text);
+  linesKoDiv.appendChild(koDiv);
 
-  let timeSpan = document.createElement("span");
-  timeSpan.className = "time-tag";
-  timeSpan.innerText = `[${formatSRTTime(startMs)} --> ${formatSRTTime(endMs)}]`;
-  div.appendChild(timeSpan);
+  // 2. Create Right DOM Element (Translation Placeholder) SYNCHRONOUSLY
+  const transDiv = document.createElement("div");
+  transDiv.className = "line new";
+  transDiv.id = `trans-line-${recordIndex}`;
+  transDiv.innerHTML = `<span class="time-tag">${timeFormatted}</span><span class="loading-text">번역 불러오는 중...</span>`;
+  linesTransDiv.appendChild(transDiv);
 
-  let textNode = document.createTextNode(text);
-  div.appendChild(textNode);
-
-  if (transText) {
-    let transSpan = document.createElement("span");
-    transSpan.className = "trans-text";
-    transSpan.innerText = transText;
-    div.appendChild(transSpan);
-  }
-
-  div.onclick = function() {
-    const copyContent = div.innerText;
-    navigator.clipboard.writeText(copyContent).then(() => {
-      div.classList.add("copied");
-      setTimeout(() => div.classList.remove("copied"), 500);
-    });
-  };
-
-  linesDiv.appendChild(div);
-  setTimeout(() => div.classList.remove("new"), 800);
-
+  // Auto Scroll Synchronized
   if (autoScroll) {
-    linesDiv.scrollTop = linesDiv.scrollHeight;
+    linesKoDiv.scrollTop = linesKoDiv.scrollHeight;
+    linesTransDiv.scrollTop = linesTransDiv.scrollHeight;
   }
+
+  // Highlight effect removal
+  setTimeout(() => {
+    koDiv.classList.remove("new");
+    transDiv.classList.remove("new");
+  }, 800);
+
+  // 3. ASYNCHRONOUS TRANSLATION & PHONETICS UPDATE
+  const selectedLang = targetLangSelect.value;
+  if (selectedLang !== "none") {
+    const transText = await fetchTranslation(text, selectedLang);
+    record.trans = transText;
+
+    let phonoText = "";
+    if (isPhoneticEnabled && transText) {
+      phonoText = await fetchPhonetic(transText, selectedLang);
+      record.phono = phonoText;
+    }
+
+    updateTransLineUI(recordIndex);
+  } else {
+    transDiv.innerHTML = `<span class="time-tag">${timeFormatted}</span><span class="trans-content" style="opacity:0.4;">(번역 안 함)</span>`;
+    transDiv.onclick = () => copyText(transDiv, text);
+  }
+}
+
+function updateTransLineUI(index) {
+  const record = subtitleRecords[index];
+  const transDiv = document.getElementById(`trans-line-${index}`);
+  if (!transDiv || !record) return;
+
+  const timeFormatted = `[${formatSRTTime(record.startMs)} --> ${formatSRTTime(record.endMs)}]`;
+  let contentHtml = `<span class="time-tag">${timeFormatted}</span>`;
+
+  if (record.trans) {
+    contentHtml += `<span class="trans-content">${record.trans}</span>`;
+    if (isPhoneticEnabled && record.phono) {
+      contentHtml += `<span class="phono-text">🗣️ [발음] ${record.phono}</span>`;
+    }
+  } else {
+    contentHtml += `<span class="trans-content" style="opacity:0.4;">-</span>`;
+  }
+
+  transDiv.innerHTML = contentHtml;
+  transDiv.onclick = () => copyText(transDiv, `${record.trans}\n${record.phono ? '[발음] ' + record.phono : ''}`);
+}
+
+async function reRenderAllTranslations() {
+  const selectedLang = targetLangSelect.value;
+  for (let i = 0; i < subtitleRecords.length; i++) {
+    const record = subtitleRecords[i];
+    if (selectedLang !== "none" && record.ko) {
+      record.trans = await fetchTranslation(record.ko, selectedLang);
+      if (isPhoneticEnabled && record.trans) {
+        record.phono = await fetchPhonetic(record.trans, selectedLang);
+      } else {
+        record.phono = "";
+      }
+    } else {
+      record.trans = "";
+      record.phono = "";
+    }
+    updateTransLineUI(i);
+  }
+}
+
+function copyText(elem, text) {
+  navigator.clipboard.writeText(text).then(() => {
+    elem.classList.add("copied");
+    setTimeout(() => elem.classList.remove("copied"), 500);
+  });
 }
 
 // --------------------------------------------------
@@ -583,7 +832,6 @@ function flushBuffer() {
     let rawDuration = totalDuration * charRatio;
 
     let maxVoiceDuration = (lineText.length * 200) + 350;
-    
     let lineDuration = Math.min(rawDuration, maxVoiceDuration);
     lineDuration = Math.max(lineDuration, 800);
 
@@ -599,9 +847,9 @@ function flushBuffer() {
   clearLive();
 }
 
-// --------------------
+// --------------------------------------------------
 // STT RESULT HANDLER
-// --------------------
+// --------------------------------------------------
 recognition.onresult = function(event) {
   for (let i = event.resultIndex; i < event.results.length; i++) {
     let transcript = event.results[i][0].transcript.trim();
@@ -621,9 +869,9 @@ recognition.onresult = function(event) {
   }
 };
 
-// --------------------
-// AUTO RECONNECT
-// --------------------
+// --------------------------------------------------
+// AUTO RECONNECT & ERROR HANDLER
+// --------------------------------------------------
 recognition.onend = function() {
   if (isListening) {
     setTimeout(() => {
@@ -642,9 +890,9 @@ recognition.onerror = function(event) {
   }
 };
 
-// --------------------
+// --------------------------------------------------
 // EXPORT SRT FILE
-// --------------------
+// --------------------------------------------------
 function exportSRT(mode) {
   if (subtitleRecords.length === 0) {
     alert("다운로드할 자막 데이터가 없습니다.");
@@ -662,6 +910,7 @@ function exportSRT(mode) {
     } else if (mode === 'both') {
       srtContent += `${item.ko}\n`;
       if (item.trans) srtContent += `${item.trans}\n`;
+      if (item.phono) srtContent += `[발음] ${item.phono}\n`;
       srtContent += `\n`;
     }
   });
